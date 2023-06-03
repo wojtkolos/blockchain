@@ -51,3 +51,14 @@ print("Block 2 created.")
 # Verifying the blockchain
 is_valid = verify_blockchain(blockchain)
 print("Is blockchain valid?", is_valid)
+
+
+"""
+This implementation defines a Block class that represents a single block in the blockchain. Each block contains an index, a hash of the previous block, a timestamp, some data (in this case, transaction data), and its own hash. The calculate_hash function calculates the hash of a given block based on its attributes using the SHA-256 algorithm.
+
+The create_genesis_block function creates the initial block (genesis block) with hardcoded data. The create_new_block function creates a new block by taking the previous block as input and generating a new hash for the current block.
+
+Finally, the verify_blockchain function checks the integrity of the blockchain by verifying the hash and previous hash of each block against the calculated values.
+
+In the example code, we create a blockchain by adding a genesis block and two subsequent blocks. Then, we verify the integrity of the blockchain by calling the verify_blockchain function.
+"""
