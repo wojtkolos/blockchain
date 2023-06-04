@@ -1,8 +1,52 @@
 import hashlib
 import time
+import binascii
+import Crypto
+import Crypto.Random
+from Crypto.Hash import SHA
+from Crypto.PublicKey import RSA
+from Crypto.Signature import PKCS1_v1_5
 
+class Client:
+    def __init__(self, balance : float = 10):
+        random = Crypto.Random.new().read
+        self._private_key = RSA.generate(1024, random)
+        self._public_key = self._private_key.publickey()
+        self._signer = PKCS1_v1_5.new(self._private_key)
+        self.balance = balance
+
+    @property
+    def identity(self) -> str:
+        return binascii.hexlify(self._public_key.exportKey(format='DER')).decode('ascii')
+
+class Transaction:
+    def __init__(self, sender : Client, recipient : Client, value : float):
+        self.sender : Client = sender
+        self.recipient : Client = recipient
+        self.value : float = value
+        self.time = int(time.time())
+    
+    def to_dict(self):
+        if self.sender == "Genesis":
+            identity = "Genesis"
+        else:
+            identity = self.sender.identity
+
+        return {
+            'sender': identity,
+            'recipient': self.recipient,
+            'value': self.value,
+            'time' : self.time
+        }
+
+    def sign_transaction(self) -> str:
+        private_key = self.sender._private_key
+        signer = PKCS1_v1_5.new(private_key)
+        h = SHA.new(str(self.to_dict()).encode('utf8'))
+        return binascii.hexlify(signer.sign(h)).decode('ascii')
+    
 class Block:
-    def __init__(self, index, previous_hash, timestamp, data, hash, nonce):
+    def __init__(self, index : int, previous_hash : str, timestamp : int, data : str | list[Transaction], hash : str, nonce : int):
         self.index = index
         self.previous_hash = previous_hash
         self.timestamp = timestamp
@@ -13,6 +57,7 @@ class Block:
     def calculate_hash(self):
         value = str(self.index) + str(self.previous_hash) + str(self.timestamp) + str(self.data) + str(self.nonce)
         return hashlib.sha256(value.encode()).hexdigest()
+
 
 class Blockchain:
     def __init__(self):
@@ -25,13 +70,13 @@ class Blockchain:
     def get_last_block(self):
         return self.chain[-1]
 
-    def add_block(self, new_block):
+    def add_block(self, new_block : Block):
         new_block.previous_hash = self.get_last_block().hash
         new_block.hash = new_block.calculate_hash()
         self.proof_of_work(new_block)
         self.chain.append(new_block)
 
-    def proof_of_work(self, block):
+    def proof_of_work(self, block : Block):
         while block.hash[:self.difficulty] != "0" * self.difficulty:
             block.nonce += 1
             block.hash = block.calculate_hash()
@@ -49,42 +94,65 @@ class Blockchain:
 
         return True
 
-    def create_transaction(self, sender, receiver, amount):
-        new_transaction = {
-            "sender": sender,
-            "receiver": receiver,
-            "amount": amount
-        }
+    def create_transaction(self, sender : Client, receiver : Client.identity, amount : float):
+        new_transaction = Transaction(
+            sender,
+            receiver,
+            amount
+        )
         return new_transaction
 
-    def validate_transaction(self, transaction):
-        sender_balance = self.get_balance(transaction['sender'])
+    def validate_transaction(self, transaction : Transaction):
+        sender_balance = self.get_balance(transaction.sender)
 
-        if sender_balance < transaction['amount']:
+        if sender_balance < transaction.value:
             return False
 
         return True
 
-    def get_balance(self, address):
+    def get_balance(self, address : Client):
         balance = 0
         for block in self.chain:
             if block.data != "Genesis Block":
                 transactions = block.data
                 for transaction in transactions:
-                    if transaction['sender'] == address:
-                        balance -= transaction['amount']
-                    if transaction['receiver'] == address:
-                        balance += transaction['amount']
+                    if transaction.sender.identity == address.identity:
+                        balance -= transaction.value
+                    if transaction.recipient == address.identity:
+                        balance += transaction.value
         return balance
 
 # Creating a blockchain
 blockchain = Blockchain()
 print("Blockchain created.")
 
+# Create clients
+Alice = Client()
+Bob = Client()
+Alice = Client()
+Charlie = Client()
+
+
 # Adding blocks and transactions to the blockchain
-transaction1 = blockchain.create_transaction("Alice", "Bob", 10)
-transaction2 = blockchain.create_transaction("Bob", "Charlie", 5)
-transaction3 = blockchain.create_transaction("Alice", "Charlie", 3)
+transaction1 = Transaction(
+    Alice,
+    Bob.identity,
+    10.0
+)
+transaction2 = Transaction(
+    Bob,
+    Charlie.identity,
+    5.0
+)
+transaction1.sign_transaction()
+transaction3 = Transaction(
+    Alice,
+    Charlie.identity,
+    3.0
+)
+# transaction1 = blockchain.create_transaction("Alice", "Bob", 10)
+# transaction2 = blockchain.create_transaction("Bob", "Charlie", 5)
+# transaction3 = blockchain.create_transaction("Alice", "Charlie", 3)
 
 block1 = Block(1, "", int(time.time()), [transaction1, transaction2], "", 0)
 blockchain.add_block(block1)
@@ -96,7 +164,7 @@ print("Block 2 created.")
 
 # Verifying the blockchain and transactions
 is_valid_blockchain = blockchain.validate_blockchain()
-is_valid_transaction = blockchain.validate_transaction(transaction1)
+is_valid_transaction = blockchain.validate_transaction(transaction2)
 print("Is blockchain valid?", is_valid_blockchain)
 print("Is transaction valid?", is_valid_transaction)
 
