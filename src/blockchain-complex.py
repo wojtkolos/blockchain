@@ -169,9 +169,9 @@ print("Is blockchain valid?", is_valid_blockchain)
 print("Is transaction valid?", is_valid_transaction)
 
 # Checking balance
-balance_alice = blockchain.get_balance("Alice")
-balance_bob = blockchain.get_balance("Bob")
-balance_charlie = blockchain.get_balance("Charlie")
+balance_alice = blockchain.get_balance(Alice)
+balance_bob = blockchain.get_balance(Bob)
+balance_charlie = blockchain.get_balance(Charlie)
 print("Alice's balance:", balance_alice)
 print("Bob's balance:", balance_bob)
 print("Charlie's balance:", balance_charlie)
