@@ -133,7 +133,7 @@ Alice = Client()
 Charlie = Client()
 
 
-# Adding blocks and transactions to the blockchain
+# Create transactions and sign them
 transaction1 = Transaction(
     Alice,
     Bob.identity,
@@ -144,16 +144,16 @@ transaction2 = Transaction(
     Charlie.identity,
     5.0
 )
-transaction1.sign_transaction()
 transaction3 = Transaction(
     Alice,
     Charlie.identity,
     3.0
 )
-# transaction1 = blockchain.create_transaction("Alice", "Bob", 10)
-# transaction2 = blockchain.create_transaction("Bob", "Charlie", 5)
-# transaction3 = blockchain.create_transaction("Alice", "Charlie", 3)
+transaction1.sign_transaction()
+transaction2.sign_transaction()
+transaction3.sign_transaction()
 
+# Create blocks and add then into blockchain
 block1 = Block(1, "", int(time.time()), [transaction1, transaction2], "", 0)
 blockchain.add_block(block1)
 print("Block 1 created.")
